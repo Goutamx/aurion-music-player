@@ -1,35 +1,30 @@
 {
   "name": "aurion-music-player",
   "version": "1.0.0",
-  "description": "Beautiful music player",
+  "description": "Music player for Linux",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder --linux --win"
+    "build:linux": "electron-builder --linux"
   },
-  "author": "Rishu",
+  "author": "Goutam",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.aurion.player",
+    "appId": "com.aurion.musicplayer",
     "productName": "Aurion",
+    "publish": null,
     "linux": {
-      "target": ["AppImage"],
-      "category": "AudioVideo",
-      "icon": "icon.png"
-    },
-    "win": {
-      "target": ["portable"],
-      "icon": "icon.png"
+      "target": "AppImage",
+      "category": "Audio"
     },
     "files": [
-      "index.html",
-      "main.js",
-      "icon.png"
+      "**/*",
+      "!node_modules/**/*",
+      "!dist/**/*"
     ]
   }
 }
