@@ -746,7 +746,65 @@ function invalidateArtistCache() { individualArtistCache = null; }
 
 function findBestDuoForTrio(artists, duoMap) { const possibleDuos = []; for (let i = 0; i < artists.length; i++) { for (let j = i + 1; j < artists.length; j++) { const key = [artists[i], artists[j]].map(a => a.toLowerCase().trim()).sort().join('|||'); possibleDuos.push(key); } } let bestKey = null; let bestCount = 0; possibleDuos.forEach(key => { if (duoMap.has(key)) { const count = duoMap.get(key).songCount; if (count > bestCount) { bestCount = count; bestKey = key; } } }); if (!bestKey && possibleDuos.length > 0) { bestKey = possibleDuos[0]; } return bestKey; }
 
-function getUniqueArtists() { const duoMap = new Map(); const soloMap = new Map(); App.songs.forEach(song => { const artistString = getArtistStringForParsing(song); const artists = parseArtistsFromString(artistString); const artwork = getArtworkURL(song.id); if (artists.length === 1) { const name = artists[0]; const key = name.toLowerCase().trim(); if (!soloMap.has(key)) { soloMap.set(key, { name: name, groupKey: key, type: 'solo', artwork: artwork, songCount: 1, songs: [song] }); } else { const entry = soloMap.get(key); entry.songCount++; entry.songs.push(song); if (!entry.artwork && artwork) entry.artwork = artwork; } } else if (artists.length === 2) { const key = artists.map(a => a.toLowerCase().trim()).sort().join('|||'); const displayName = artists.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join(', '); if (!duoMap.has(key)) { duoMap.set(key, { name: displayName, groupKey: key, type: 'duo', artwork: artwork, songCount: 1, songs: [song] }); } else { const entry = duoMap.get(key); entry.songCount++; entry.songs.push(song); if (!entry.artwork && artwork) entry.artwork = artwork; } } }); App.songs.forEach(song => { const artistString = getArtistStringForParsing(song); const artists = parseArtistsFromString(artistString); const artwork = getArtworkURL(song.id); if (artists.length >= 3) { const bestDuoKey = findBestDuoForTrio(artists, duoMap); if (bestDuoKey && duoMap.has(bestDuoKey)) { const entry = duoMap.get(bestDuoKey); entry.songCount++; entry.songs.push(song); if (!entry.artwork && artwork) entry.artwork = artwork; } else { const firstTwo = artists.slice(0, 2); const key = firstTwo.map(a => a.toLowerCase().trim()).sort().join('|||'); const displayName = firstTwo.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join(', '); if (!duoMap.has(key)) { duoMap.set(key, { name: displayName, groupKey: key, type: 'duo', artwork: artwork, songCount: 1, songs: [song] }); } else { const entry = duoMap.get(key); entry.songCount++; entry.songs.push(song); if (!entry.artwork && artwork) entry.artwork = artwork; } } } }); const results = []; duoMap.forEach(duo => { if (duo.songCount >= 2) { results.push(duo); } }); soloMap.forEach(solo => { if (solo.songCount >= INDIVIDUAL_ARTIST_THRESHOLD) { results.push(solo); } }); return results.sort((a, b) => b.songCount - a.songCount); }
+function getUniqueArtists() {
+  const duoMap = new Map();
+
+  App.songs.forEach(song => {
+    const artistString = getArtistStringForParsing(song);
+    const artists = parseArtistsFromString(artistString);
+    const artwork = getArtworkURL(song.id);
+
+    if (artists.length === 2) {
+      const key = artists.map(a => a.toLowerCase().trim()).sort().join('|||');
+      const displayName = artists.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join(', ');
+      if (!duoMap.has(key)) {
+        duoMap.set(key, { name: displayName, groupKey: key, type: 'duo', artwork: artwork, songCount: 1, songs: [song] });
+      } else {
+        const entry = duoMap.get(key);
+        entry.songCount++;
+        entry.songs.push(song);
+        if (!entry.artwork && artwork) entry.artwork = artwork;
+      }
+    }
+  });
+
+  App.songs.forEach(song => {
+    const artistString = getArtistStringForParsing(song);
+    const artists = parseArtistsFromString(artistString);
+    const artwork = getArtworkURL(song.id);
+
+    if (artists.length >= 3) {
+      const bestDuoKey = findBestDuoForTrio(artists, duoMap);
+      if (bestDuoKey && duoMap.has(bestDuoKey)) {
+        const entry = duoMap.get(bestDuoKey);
+        entry.songCount++;
+        entry.songs.push(song);
+        if (!entry.artwork && artwork) entry.artwork = artwork;
+      } else {
+        const firstTwo = artists.slice(0, 2);
+        const key = firstTwo.map(a => a.toLowerCase().trim()).sort().join('|||');
+        const displayName = firstTwo.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join(', ');
+        if (!duoMap.has(key)) {
+          duoMap.set(key, { name: displayName, groupKey: key, type: 'duo', artwork: artwork, songCount: 1, songs: [song] });
+        } else {
+          const entry = duoMap.get(key);
+          entry.songCount++;
+          entry.songs.push(song);
+          if (!entry.artwork && artwork) entry.artwork = artwork;
+        }
+      }
+    }
+  });
+
+  const results = [];
+  duoMap.forEach(duo => {
+    if (duo.songCount >= 2) {
+      results.push(duo);
+    }
+  });
+
+  return results.sort((a, b) => b.songCount - a.songCount);
+}
 
 function getSongsByArtistKey(key) { return App.songs.filter(song => { const artistString = getArtistStringForParsing(song); const artists = parseArtistsFromString(artistString); if (artists.length === 1) { return artists[0].toLowerCase().trim() === key; } else if (artists.length === 2) { const songKey = artists.map(a => a.toLowerCase().trim()).sort().join('|||'); return songKey === key; } else { const possibleDuos = []; for (let i = 0; i < artists.length; i++) { for (let j = i + 1; j < artists.length; j++) { const duoKey = [artists[i], artists[j]].map(a => a.toLowerCase().trim()).sort().join('|||'); possibleDuos.push(duoKey); } } return possibleDuos.includes(key); } }); }
 
